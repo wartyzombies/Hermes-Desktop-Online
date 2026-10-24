@@ -1,0 +1,58 @@
+{
+  "contract": "Hermes Desktop window.hermesDesktop preload bridge",
+  "source": "apps/desktop/electron/preload.ts",
+  "verifiedHermesVersion": "0.22.2",
+  "implemented": [
+    "getConnection",
+    "getConnectionFor",
+    "getProfileRoutes",
+    "getGatewayWsUrl",
+    "getGatewayWsUrlFor",
+    "revalidateConnection",
+    "touchBackend",
+    "getAgentRoster",
+    "api (JSON only; rejects uploads and registry connection IDs)",
+    "setActiveConnectionRoute",
+    "getConnectionConfig (browser-safe synthetic descriptor)",
+    "profile.getDefault/setDefault/onDefaultChanged/get/remember/set",
+    "getLocalStorage/setLocalStorage/removeLocalStorage (namespaced localStorage)",
+    "notify (same-origin event)",
+    "openExternal (HTTP(S)-only new tab)",
+    "writeClipboard (browser permission dependent)",
+    "readClipboard (intentionally returns empty string)",
+    "getVersion/getMachineProfile/getRemoteDisplayReason/getPathForFile",
+    "windowControls (no-op; close navigates to dashboard root)",
+    "windowRelay (frame-local listeners only)",
+    "getPoolLimits (fixed browser descriptor)",
+    "getBootProgress/getRecentLogs/getBootstrapState (safe placeholders)",
+    "onBootstrapEvent (inert browser subscription)",
+    "connections.list (primary dashboard only)",
+    "getSecretStorageEncryption/cloud.status (safe placeholders)",
+    "requestMicrophoneAccess (browser prompt only)",
+    "on* subscriptions (in-memory callbacks; no native event source)"
+  ],
+  "degraded": [
+    "glassSupported/translucencySupported/localModelsEnabled/assumeFreshInstall/localSkin",
+    "remote connection metadata and connection settings are synthetic",
+    "connection registry collapsed to the active Dashboard backend",
+    "native window events and notifications are not emitted",
+    "profile routing uses the Dashboard's profile-scoped REST and WebSocket APIs",
+    "clipboard availability depends on browser permissions and secure context"
+  ],
+  "unsupported": [
+    "registry-scoped remote gateway connections and per-connection OAuth",
+    "FormData/file uploads and binary IPC payloads",
+    "native OS windows, popouts, quick entry, HUD, wake indicator and overlays",
+    "Electron native dialogs, keychain, updater, shell and arbitrary IPC",
+    "local filesystem, integrated terminal, git state and plugin source access",
+    "glass/translucency, custom title bar and system window controls",
+    "Electron webview preview partition and local HTTP embed host",
+    "screen capture, save dialogs, OS notifications and battery state"
+  ],
+  "notes": [
+    "This is a version-specific browser adapter, not a supported replacement for the Desktop preload API.",
+    "Browser workbench requires same-origin Dashboard plugin execution plus its documented fetchJSON and buildWsUrl SDK methods.",
+    "Only api calls using Dashboard profile routing are supported; the desktop also supports local pools and multiple registered gateway connections.",
+    "Native-only APIs fail closed, return explicit unavailable values, or are harmless no-ops; no arbitrary filesystem or shell access is emulated."
+  ]
+}

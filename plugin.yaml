@@ -1,0 +1,16 @@
+name: desktop-workbench
+version: 0.1.0
+manifest_version: 2
+api_version: 1
+description: Serve the Hermes Desktop renderer in the Hermes Web Dashboard using the official dashboard plugin SDK and a browser host bridge.
+license: MIT
+homepage: https://github.com/NousResearch/hermes-agent
+tags:
+  - desktop
+  - dashboard
+  - web
+requires_hermes: ">=0.22.2, <0.23"
+provides_tools: []
+provides_hooks: []
+kind: standalone
+requires_env: []

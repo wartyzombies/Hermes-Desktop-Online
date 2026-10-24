@@ -1,0 +1,7 @@
+{
+  "id": "hermes-online-desktop",
+  "name": "Hermes Online Desktop",
+  "version": "0.1.0",
+  "description": "Open the official Hermes Web Dashboard from Hermes Desktop.",
+  "entry": "plugin.js"
+}
