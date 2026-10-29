@@ -21,8 +21,8 @@
     return;
   }
 
-  var React = SDK.React;
   var useEffect = SDK.hooks.useEffect;
+  var useRef = SDK.hooks.useRef;
   var useState = SDK.hooks.useState;
 
   function getBasePath() {
@@ -30,8 +30,7 @@
     return raw ? (raw.startsWith('/') ? raw : '/' + raw).replace(/\/+$/, '') : '';
   }
 
-  function getFrameUrl() {
-    var url = new URL(getBasePath() + '/dashboard-plugins/' + PLUGIN + '/frame/index.html', window.location.origin);
+  function copyContextParams(url) {
     var query = new URLSearchParams(window.location.search);
     var profile = query.get('profile');
     var connectionId = query.get('connectionId');
@@ -40,23 +39,86 @@
     return url.toString();
   }
 
+  function getFrameUrl() {
+    return copyContextParams(new URL(
+      getBasePath() + '/dashboard-plugins/' + PLUGIN + '/frame/index.html',
+      window.location.origin
+    ));
+  }
+
+  function getDashboardUrl() {
+    return copyContextParams(new URL(getBasePath() + '/chat', window.location.origin));
+  }
+
   function WorkbenchPage() {
-    var statePair = useState('loading');
-    var state = statePair[0];
-    var setState = statePair[1];
-    var framePair = useState(getFrameUrl());
-    var frameUrl = framePair[0];
-    var setFrameUrl = framePair[1];
+    var frameUrlPair = useState(getFrameUrl());
+    var frameUrl = frameUrlPair[0];
+    var setFrameUrl = frameUrlPair[1];
+    var frameRef = useRef(null);
 
     useEffect(function () {
-      var handleMessage = function (event) {
+      var shell = document.createElement('dialog');
+      shell.className = 'desktop-workbench-shell';
+      shell.dataset.workbenchState = 'loading';
+      shell.style.cssText = 'position:fixed;inset:0;margin:0;width:100vw;height:100vh;max-width:none;max-height:none;padding:0;border:0;overflow:hidden;background:#111;color:#eee;';
+      shell.addEventListener('cancel', function (event) { event.preventDefault(); });
+
+      var loading = document.createElement('div');
+      loading.className = 'desktop-workbench-loading';
+      loading.setAttribute('role', 'status');
+      loading.textContent = 'Loading Hermes Desktop…';
+
+      var iframe = document.createElement('iframe');
+      iframe.className = 'desktop-workbench-frame';
+      iframe.title = 'Hermes Desktop Workbench';
+      iframe.referrerPolicy = 'same-origin';
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals');
+      iframe.setAttribute('allow', 'clipboard-read; clipboard-write; microphone; camera; display-capture');
+
+      var backLink = document.createElement('a');
+      backLink.className = 'desktop-workbench-back';
+      backLink.href = getDashboardUrl();
+      backLink.setAttribute('aria-label', 'Return to Hermes Dashboard');
+      backLink.textContent = '← Dashboard';
+
+      var error = document.createElement('div');
+      error.className = 'desktop-workbench-error';
+      error.setAttribute('role', 'alert');
+      error.textContent = 'The Desktop renderer could not load. Run `hermes desktop-workbench build` and reload the Dashboard.';
+      error.hidden = true;
+
+      shell.append(iframe, loading, error, backLink);
+      document.body.appendChild(shell);
+      shell.showModal();
+      frameRef.current = iframe;
+
+      function setState(state) {
+        shell.dataset.workbenchState = state;
+        if (state === 'loaded' || state === 'ready') loading.hidden = true;
+        if (state === 'error') error.hidden = false;
+      }
+
+      function handleMessage(event) {
         if (event.origin !== window.location.origin || !event.data || typeof event.data !== 'object') return;
-        if (event.data.source !== 'desktop-workbench-frame') return;
-        if (event.source !== document.querySelector('.desktop-workbench-frame')?.contentWindow) return;
+        if (event.data.source !== 'desktop-workbench-frame' || event.source !== iframe.contentWindow) return;
         if (event.data.type === 'ready') setState('ready');
-      };
+      }
+
+      function handleLoad() { setState('loaded'); }
+      function handleError() { setState('error'); }
       window.addEventListener('message', handleMessage);
-      return function () { window.removeEventListener('message', handleMessage); };
+      iframe.addEventListener('load', handleLoad);
+      iframe.addEventListener('error', handleError);
+      iframe.src = frameUrl;
+
+      return function () {
+        window.removeEventListener('message', handleMessage);
+        iframe.removeEventListener('load', handleLoad);
+        iframe.removeEventListener('error', handleError);
+        frameRef.current = null;
+        shell.close();
+        shell.remove();
+      };
     }, []);
 
     useEffect(function () {
@@ -64,36 +126,11 @@
       if (updated !== frameUrl) setFrameUrl(updated);
     }, [window.location.search]);
 
-    return React.createElement('div', {
-      className: 'desktop-workbench-shell',
-      'data-workbench-state': state,
-      style: { position: 'relative', height: '100%', width: '100%' },
-      children: [
-        state === 'loading' ? React.createElement('div', {
-          className: 'desktop-workbench-loading',
-          role: 'status',
-          key: 'loading',
-          children: 'Loading Hermes Desktop…'
-        }) : null,
-        React.createElement('iframe', {
-          key: 'frame',
-          className: 'desktop-workbench-frame',
-          src: frameUrl,
-          title: 'Hermes Desktop Workbench',
-          referrerPolicy: 'same-origin',
-          sandbox: 'allow-same-origin allow-scripts allow-forms allow-downloads allow-popups allow-modals',
-          onLoad: function () { setState('loaded'); },
-          onError: function () { setState('error'); },
-          allow: 'clipboard-read; clipboard-write; microphone; camera; display-capture'
-        }),
-        state === 'error' ? React.createElement('div', {
-          className: 'desktop-workbench-error',
-          role: 'alert',
-          key: 'error',
-          children: 'The Desktop renderer could not load. Run `hermes desktop-workbench build` and reload the Dashboard.'
-        }) : null
-      ]
-    });
+    useEffect(function () {
+      if (frameRef.current && frameRef.current.src !== frameUrl) frameRef.current.src = frameUrl;
+    }, [frameUrl]);
+
+    return null;
   }
 
   window.__HERMES_PLUGINS__.register(PLUGIN, WorkbenchPage);
