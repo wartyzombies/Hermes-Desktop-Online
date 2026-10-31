@@ -41,7 +41,7 @@ if destination.exists() and not (destination / "plugin.yaml").is_file():
     raise SystemExit(f"install-local: refusing to replace non-plugin directory {destination}.")
 
 excluded = {
-    ".git", ".DS_Store", ".freebuff", ".venv", "__pycache__", ".pytest_cache",
+    ".git", ".DS_Store", ".build", ".freebuff", ".venv", "__pycache__", ".pytest_cache",
     "hermes-agent-main-dev", "Hermes-Desktop-Online", "node_modules", "frame.staging", "frame.previous",
 }
 
