@@ -6,6 +6,27 @@ HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 export HERMES_HOME
 DESTINATION="$HERMES_HOME/plugins/desktop-workbench"
 PAYLOAD="$ROOT/dashboard/frame"
+INSTALLED_PAYLOAD="$DESTINATION/dashboard/frame"
+
+# The Desktop renderer is build output, not package source (see .gitignore), so a clean
+# checkout has no payload. Use one already built here, otherwise stage one from a Desktop
+# dist directory: an explicit HERMES_DESKTOP_DIST, a Hermes checkout, or a payload kept
+# beside this repository.
+renderer_source() {
+  local candidate
+  for candidate in \
+    "${HERMES_DESKTOP_DIST:-}" \
+    "${HERMES_SOURCE:+$HERMES_SOURCE/apps/desktop/dist}" \
+    "$HERMES_HOME/hermes-agent/apps/desktop/dist" \
+    "$HOME/src/hermes-agent/apps/desktop/dist" \
+    "$ROOT/../hermes-desktop-frame-payload"; do
+    if [[ -n "$candidate" && -f "$candidate/index.html" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
 
 if ! command -v hermes >/dev/null 2>&1; then
   echo "install-local: Hermes CLI not found; install Hermes first." >&2
@@ -15,9 +36,11 @@ if ! command -v python3 >/dev/null 2>&1; then
   echo "install-local: python3 is required." >&2
   exit 1
 fi
-if [[ ! -f "$PAYLOAD/index.html" || ! -f "$PAYLOAD/hermes-web-shim.js" ]]; then
-  echo "install-local: the bundled Desktop renderer payload is incomplete at $PAYLOAD." >&2
-  echo "Re-download or refresh the plugin package before installing." >&2
+RENDERER_SOURCE="$(renderer_source || true)"
+if [[ ! -f "$PAYLOAD/index.html" && -z "$RENDERER_SOURCE" ]]; then
+  echo "install-local: no renderer payload in this checkout and no Desktop dist directory to build one from." >&2
+  echo "Nothing was installed. Point HERMES_DESKTOP_DIST (or HERMES_SOURCE) at a Hermes Desktop build, then rerun:" >&2
+  echo "  HERMES_DESKTOP_DIST=\$HOME/src/hermes-agent/apps/desktop/dist bash scripts/install-local.sh" >&2
   exit 1
 fi
 
@@ -69,10 +92,22 @@ except BaseException:
     raise
 if backup.exists():
     shutil.rmtree(backup)
-print(f"Copied plugin files to {destination}")
 PY
 
-printf 'Bundled Hermes Desktop renderer is ready.\n'
+printf 'Copied plugin files to %s\n' "$DESTINATION"
+
+if [[ -f "$PAYLOAD/index.html" ]]; then
+  printf 'Using the renderer payload already built in this checkout.\n'
+elif [[ -n "$RENDERER_SOURCE" ]]; then
+  printf 'Building the Desktop renderer payload from %s\n' "$RENDERER_SOURCE"
+  if ! python3 "$ROOT/scripts/build-payload.py" --source "$RENDERER_SOURCE" --destination "$INSTALLED_PAYLOAD" >/dev/null; then
+    echo "install-local: the plugin was copied but the renderer payload could not be built;" >&2
+    echo "the /workbench tab will report a missing payload until it is." >&2
+    exit 1
+  fi
+fi
+
+printf 'Desktop renderer payload is ready.\n'
 hermes plugins enable desktop-workbench
 printf '\nInstalled and enabled desktop-workbench. Start the Dashboard, then run:\n'
 printf '  hermes desktop-workbench open\n'

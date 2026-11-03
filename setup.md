@@ -1,10 +1,10 @@
 # Quick setup (Hermes 0.22.2)
 
-This installs the plugin from the current folder, uses the Desktop renderer bundled with the plugin, and enables it. No Hermes Desktop build or source checkout is needed. It works without Git metadata.
+This installs the plugin from the current folder, stages the bundled Desktop renderer into the installed copy, and enables it. It works without Git metadata and does not modify a Hermes checkout.
 
 ## Install
 
-Requirements: Hermes **0.22.2** and Python **3.10+**. The renderer is bundled with the plugin.
+Requirements: Hermes **0.22.2** and Python **3.10+**. The renderer payload is staged during install; see below if this checkout has none.
 
 From this project folder, run:
 
@@ -12,7 +12,9 @@ From this project folder, run:
 bash scripts/install-local.sh
 ```
 
-The installer copies this project—including its prebuilt renderer—to `~/.hermes/plugins/desktop-workbench` and enables the plugin. It does not need or alter a Hermes Desktop source checkout. The script may be run again to refresh the installed copy.
+The installer copies this project to `~/.hermes/plugins/desktop-workbench`, stages the Desktop renderer payload there, and enables the plugin. It does not alter a Hermes Desktop source checkout, and the script may be run again to refresh the installed copy.
+
+The renderer is build output and is not committed, so the installer takes it from the first source it finds: a payload already built in this checkout, `HERMES_DESKTOP_DIST`, `$HERMES_SOURCE/apps/desktop/dist`, `~/.hermes/hermes-agent/apps/desktop/dist`, `~/src/hermes-agent/apps/desktop/dist`, or a payload kept beside this repository. If none exists, the install stops with instructions rather than shipping a plugin whose `/workbench` tab cannot load.
 
 ## Open it
 
@@ -45,7 +47,7 @@ hermes plugins validate .
 hermes plugins doctor . --ci
 ```
 
-The prebuilt Desktop renderer is a large bundled asset; Hermes package validation may flag patterns inside its bundled JavaScript.
+The package itself contains no bundled renderer, so validation reads only plugin code. If you build a payload into the checkout to inspect it, Hermes package validation will scan those minified bundles and may flag patterns inside them.
 
 ## Uninstall
 

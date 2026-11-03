@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -30,6 +32,8 @@ def test_cli_parser_exposes_expected_commands():
 
 def test_bundled_renderer_is_ready_for_plugin_only_install():
     frame = ROOT / "dashboard" / "frame"
+    if not (frame / "index.html").is_file():
+        pytest.skip("renderer payload is build output; run scripts/build-payload.py to stage one")
     index = (frame / "index.html").read_text(encoding="utf-8")
 
     assert '<script src="./hermes-web-shim.js"></script>' in index

@@ -10,3 +10,9 @@ __pycache__/
 # the plugin package (scripts/install-local.sh skips it) and the security scan would
 # otherwise walk its docs, tests and locales as if they were plugin code.
 hermes-agent-main-dev/
+
+# The bundled Desktop renderer is build output from a Hermes Desktop dist directory
+# (scripts/build-payload.py). Keeping 45MB of minified bundles in the package made
+# `hermes plugins validate .` read them as plugin code; scripts/install-local.sh builds
+# the payload into the install directory instead.
+dashboard/frame/
