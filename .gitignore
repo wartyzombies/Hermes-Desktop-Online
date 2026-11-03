@@ -5,3 +5,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .git-broken-pointer-*/
+
+# A local upstream Hermes checkout kept beside this repo for reference. It is not part of
+# the plugin package (scripts/install-local.sh skips it) and the security scan would
+# otherwise walk its docs, tests and locales as if they were plugin code.
+hermes-agent-main-dev/
